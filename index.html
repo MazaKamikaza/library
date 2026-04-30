@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -433,7 +434,7 @@ function onGenreChange() {
   document.getElementById('input-title').value = '';
   document.getElementById('autocomplete-list').classList.remove('show');
   if (!genre) { hideAll(); return; }
-  const books = DB.filter(b => b.genre === genre);
+  const books = DB.filter(b => b.genre && b.genre.split(',').map(g => g.trim()).includes(genre));
   hideAll();
   if (books.length === 0) { document.getElementById('no-result').style.display = 'block'; return; }
   renderGenreResults(genre, books);
@@ -528,7 +529,8 @@ function openCoverLightbox() {
 // ===== POPULATE DROPDOWN =====
 function populateGenreDropdown() {
   const sel = document.getElementById('input-genre');
-  const genres = [...new Set(DB.map(b => b.genre).filter(Boolean))].sort();
+  const allGenres = DB.flatMap(b => b.genre ? b.genre.split(',').map(g => g.trim()).filter(Boolean) : []);
+  const genres = [...new Set(allGenres)].sort();
   const current = sel.value;
   sel.innerHTML = '<option value="">— Svi žanrovi —</option>';
   genres.forEach(g => {
