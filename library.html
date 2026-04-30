@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblioteka</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a2008;
+    --surface: #222d0a;
+    --surface2: #2a3810;
+    --border: #3a5018;
+    --accent: #c8e820;
+    --accent2: #7aa030;
+    --text: #f0f7c0;
+    --text-muted: #8aaa40;
+    --text-dim: #b0cc70;
+    --success: #a0e040;
+    --danger: #f87171;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--mono); font-size: 13px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; }
+  .logo span { color: var(--text-muted); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { background: none; border: 1px solid transparent; color: var(--text-muted); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; padding: 7px 18px; cursor: pointer; border-radius: 4px; transition: all 0.2s; text-transform: uppercase; }
+  .nav-tab:hover { color: var(--text); border-color: var(--border); }
+  .nav-tab.active { background: var(--accent); color: #1a2008; border-color: var(--accent); font-weight: 600; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .loading-overlay { position: fixed; inset: 0; background: rgba(26,32,8,0.85); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .loading-overlay.show { display: flex; }
+  .loading-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px 48px; text-align: center; font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 300; }
+  .modal-overlay.show { display: flex; }
+  .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 40px; width: 360px; }
+  .modal-box h2 { font-family: var(--mono); font-size: 16px; color: var(--accent); margin-bottom: 8px; }
+  .modal-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+  .modal-error { color: var(--danger); font-size: 12px; font-family: var(--mono); margin-top: 10px; display: none; }
+
+  /* SEARCH */
+  .search-hero { text-align: center; margin-bottom: 48px; }
+  .search-hero h1 { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; margin-bottom: 8px; }
+  .search-hero p { color: var(--text-muted); font-size: 14px; }
+
+  .search-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; margin-bottom: 40px; }
+  .field-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
+  label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; }
+  input, select, textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 14px; padding: 12px 16px; border-radius: 6px; outline: none; transition: border-color 0.2s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238aaa40' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* AUTOCOMPLETE */
+  .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface2); border: 1px solid var(--accent); border-top: none; border-radius: 0 0 6px 6px; z-index: 50; max-height: 200px; overflow-y: auto; display: none; }
+  .autocomplete-list.show { display: block; }
+  .autocomplete-item { padding: 10px 16px; font-family: var(--mono); font-size: 13px; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.selected { background: var(--border); color: var(--accent); }
+  .autocomplete-item em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+  .btn-search { background: var(--accent); color: #1a2008; border: none; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.1em; padding: 12px 28px; border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; white-space: nowrap; }
+  .btn-search:hover { background: #d8f830; transform: translateY(-1px); }
+
+  /* GENRE RESULTS */
+  .genre-results { display: none; margin-bottom: 40px; }
+  .genre-header { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.06em; }
+  .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .book-grid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+  .book-grid-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .book-grid-cover { width: 100%; height: 140px; background: var(--surface2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .book-grid-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .book-grid-cover-placeholder { font-size: 40px; opacity: 0.3; }
+  .book-grid-info { padding: 12px; }
+  .book-grid-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 4px; line-height: 1.3; }
+  .book-grid-author { font-size: 12px; color: var(--text-muted); }
+
+  /* BOOK DETAIL */
+  #results { display: none; }
+  .result-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .result-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; background: rgba(200,232,32,0.15); color: var(--accent); border: 1px solid rgba(200,232,32,0.3); }
+  .result-title { font-family: var(--mono); font-size: 20px; color: var(--text); font-weight: 600; }
+  .section { margin-bottom: 36px; }
+  .section-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .book-detail-layout { display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: start; }
+  .book-cover-wrap { width: 100%; aspect-ratio: 2/3; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .book-cover-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .book-cover-placeholder { font-size: 64px; opacity: 0.2; }
+
+  .book-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .meta-row { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .meta-value { font-size: 14px; color: var(--text); }
+  .meta-row.full { grid-column: 1 / -1; }
+
+  .description-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-size: 14px; line-height: 1.7; color: var(--text-dim); }
+
+  .no-result { text-align: center; padding: 60px 20px; color: var(--text-muted); font-family: var(--mono); font-size: 14px; display: none; }
+
+  /* ADMIN */
+  .admin-header { margin-bottom: 32px; }
+  .admin-header h2 { font-family: var(--mono); font-size: 22px; color: var(--accent); margin-bottom: 6px; }
+  .admin-header p { color: var(--text-muted); font-size: 14px; }
+  .admin-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .admin-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; }
+  .admin-form h3 { font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .btn-save { background: var(--success); color: #1a2008; border: none; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.1em; padding: 13px 32px; border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; width: 100%; margin-top: 24px; }
+  .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-logout { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  .book-list-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .book-list-panel h3 { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 14px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .book-list { max-height: 600px; overflow-y: auto; }
+  .book-item { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; }
+  .book-item:hover { background: var(--surface2); }
+  .book-item:last-child { border-bottom: none; }
+  .bi-main { font-family: var(--mono); font-size: 13px; color: var(--accent); margin-bottom: 4px; }
+  .bi-sub { font-size: 11px; color: var(--text-muted); }
+  .btn-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 16px; transition: color 0.2s; }
+  .btn-delete:hover { color: var(--danger); }
+  .empty-list { padding: 32px 16px; text-align: center; color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--success); color: var(--success); font-family: var(--mono); font-size: 13px; padding: 12px 20px; border-radius: 6px; transform: translateY(80px); opacity: 0; transition: all 0.3s; z-index: 1000; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; z-index: 999; cursor: pointer; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 88vh; object-fit: contain; border-radius: 4px; }
+
+  .btn-back { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: var(--mono); font-size: 11px; padding: 7px 16px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-bottom: 24px; display: inline-block; }
+  .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    .search-form { grid-template-columns: 1fr; }
+    .admin-layout { grid-template-columns: 1fr; }
+    .book-detail-layout { grid-template-columns: 1fr; }
+    .book-meta { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-box"><div class="spinner"></div>Učitavanje biblioteke...</div>
+</div>
+
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box">
+    <h2>Admin pristup</h2>
+    <p>Unesite lozinku za upravljanje bibliotekom.</p>
+    <div class="field-group">
+      <label>Lozinka</label>
+      <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()" />
+    </div>
+    <div class="modal-error" id="login-error">Pogrešna lozinka.</div>
+    <button class="btn-save" style="margin-top:20px" onclick="doLogin()">Prijavi se</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">Moja <span>//</span> Biblioteka</div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" id="tab-search" onclick="showPage('search', this)">Pretraga</button>
+    <button class="nav-tab" id="tab-admin" onclick="handleAdminTab()">Admin</button>
+  </nav>
+</header>
+
+<main>
+  <!-- SEARCH PAGE -->
+  <div id="page-search" class="page active">
+    <div class="search-hero">
+      <h1>BIBLIOTEKA</h1>
+      <p>Pretražite po naslovu ili izaberite žanr</p>
+    </div>
+
+    <div class="search-form">
+      <div class="field-group">
+        <label>Naslov knjige</label>
+        <input type="text" id="input-title" placeholder="Počnite da kucate..." autocomplete="off" oninput="onTitleInput()" onkeydown="onTitleKeydown(event)" />
+        <div class="autocomplete-list" id="autocomplete-list"></div>
+      </div>
+      <div class="field-group">
+        <label>Žanr</label>
+        <select id="input-genre" onchange="onGenreChange()">
+          <option value="">— Svi žanrovi —</option>
+        </select>
+      </div>
+      <button class="btn-search" onclick="doSearch()">▶ Traži</button>
+    </div>
+
+    <div id="no-result" class="no-result">
+      <div style="font-size:32px;margin-bottom:8px;opacity:0.3">◎</div>
+      Nema rezultata za traženu pretragu.
+    </div>
+
+    <!-- GENRE RESULTS -->
+    <div id="genre-results" class="genre-results">
+      <div class="genre-header" id="genre-header"></div>
+      <div class="books-grid" id="books-grid"></div>
+    </div>
+
+    <!-- SINGLE BOOK DETAIL -->
+    <div id="results">
+      <button class="btn-back" onclick="goBack()">← Nazad</button>
+      <div class="result-header">
+        <span class="result-tag" id="result-genre-tag"></span>
+        <span class="result-title" id="result-book-title"></span>
+      </div>
+
+      <div class="book-detail-layout">
+        <div>
+          <div class="book-cover-wrap" id="result-cover" onclick="openCoverLightbox()">
+            <div class="book-cover-placeholder" id="result-cover-placeholder">📚</div>
+          </div>
+        </div>
+        <div>
+          <div class="section">
+            <div class="section-label">Informacije</div>
+            <div class="book-meta" id="result-meta"></div>
+          </div>
+          <div class="section" id="result-desc-section" style="display:none">
+            <div class="section-label">Opis</div>
+            <div class="description-box" id="result-description"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PAGE -->
+  <div id="page-admin" class="page">
+    <div class="admin-header">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h2>Admin panel</h2>
+          <p>Dodajte i upravljajte knjigama u biblioteci</p>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">Odjavi se</button>
+      </div>
+    </div>
+
+    <div class="admin-layout">
+      <div class="admin-form">
+        <h3>Nova knjiga</h3>
+        <div class="form-row">
+          <div class="field-group"><label>Naslov *</label><input type="text" id="a-title" placeholder="Naziv knjige" /></div>
+          <div class="field-group"><label>Pisac *</label><input type="text" id="a-author" placeholder="Ime i prezime" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field-group"><label>Izdavač</label><input type="text" id="a-publisher" placeholder="Naziv izdavača" /></div>
+          <div class="field-group"><label>Žanr</label><input type="text" id="a-genre" placeholder="Roman, Istorija..." /></div>
+        </div>
+        <div class="form-row">
+          <div class="field-group"><label>Broj strana</label><input type="text" id="a-pages" placeholder="npr. 320" /></div>
+          <div class="field-group"><label>Lokacija na polici</label><input type="text" id="a-location" placeholder="npr. A-3" /></div>
+        </div>
+        <div class="form-row full">
+          <div class="field-group"><label>Slika korice (URL)</label><input type="text" id="a-cover" placeholder="https://raw.githubusercontent.com/..." /></div>
+        </div>
+        <div class="form-row full">
+          <div class="field-group"><label>Opis knjige</label><textarea id="a-description" placeholder="Kratak opis sadržaja..."></textarea></div>
+        </div>
+        <button class="btn-save" onclick="saveBook()">✓ Sačuvaj knjigu</button>
+      </div>
+
+      <div class="book-list-panel">
+        <h3>Knjige u biblioteci (<span id="list-count">0</span>)</h3>
+        <div class="book-list" id="book-list"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const BIN_ID  = '69f31889aaba882197555e66';
+const API_KEY = '$2a$10$vGksn.m1pXrr6ODqKiVeXuL5j0R3HwonCvVNR8tE0NEy8RHlCxjn.';
+const ADMIN_PW = 'mojeknjige';
+const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+let DB = [];
+let isAdmin = false;
+let currentBook = null;
+let autocompleteIndex = -1;
+
+// ===== DB =====
+async function loadDB() {
+  showLoading(true);
+  try {
+    const res = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const json = await res.json();
+    DB = json.record.books || [];
+    populateGenreDropdown();
+    if (isAdmin) renderBookList();
+  } catch(e) { showToast('Greška pri učitavanju!', true); }
+  showLoading(false);
+}
+
+async function saveDB() {
+  showLoading(true);
+  try {
+    await fetch(BASE_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify({ books: DB })
+    });
+  } catch(e) { showToast('Greška pri čuvanju!', true); }
+  showLoading(false);
+}
+
+// ===== AUTH =====
+function handleAdminTab() {
+  if (isAdmin) { showPage('admin', document.getElementById('tab-admin')); }
+  else {
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('login-modal').classList.add('show');
+    setTimeout(() => document.getElementById('login-password').focus(), 100);
+  }
+}
+
+function doLogin() {
+  if (document.getElementById('login-password').value === ADMIN_PW) {
+    isAdmin = true;
+    document.getElementById('login-modal').classList.remove('show');
+    showPage('admin', document.getElementById('tab-admin'));
+    renderBookList();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() { isAdmin = false; showPage('search', document.getElementById('tab-search')); }
+
+// ===== NAV =====
+function showPage(page, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (tab) tab.classList.add('active');
+  if (page === 'search') { hideAll(); populateGenreDropdown(); }
+}
+
+function hideAll() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('genre-results').style.display = 'none';
+  document.getElementById('no-result').style.display = 'none';
+}
+
+// ===== AUTOCOMPLETE =====
+function onTitleInput() {
+  const val = document.getElementById('input-title').value.trim().toLowerCase();
+  const list = document.getElementById('autocomplete-list');
+  autocompleteIndex = -1;
+  if (val.length < 1) { list.classList.remove('show'); return; }
+  const matches = DB.filter(b => b.title.toLowerCase().includes(val)).slice(0, 8);
+  if (matches.length === 0) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.map((b, i) => {
+    const highlighted = b.title.replace(new RegExp(`(${val})`, 'gi'), '<em>$1</em>');
+    return `<div class="autocomplete-item" onmousedown="selectAutocomplete('${b.title.replace(/'/g, "\\'")}')" data-index="${i}">${highlighted} <span style="color:var(--text-muted);font-size:11px">— ${b.author}</span></div>`;
+  }).join('');
+  list.classList.add('show');
+}
+
+function onTitleKeydown(e) {
+  const list = document.getElementById('autocomplete-list');
+  const items = list.querySelectorAll('.autocomplete-item');
+  if (e.key === 'ArrowDown') {
+    autocompleteIndex = Math.min(autocompleteIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('selected', i === autocompleteIndex));
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    autocompleteIndex = Math.max(autocompleteIndex - 1, -1);
+    items.forEach((el, i) => el.classList.toggle('selected', i === autocompleteIndex));
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    if (autocompleteIndex >= 0 && items[autocompleteIndex]) {
+      items[autocompleteIndex].dispatchEvent(new MouseEvent('mousedown'));
+    } else { doSearch(); }
+  } else if (e.key === 'Escape') {
+    list.classList.remove('show');
+  }
+}
+
+function selectAutocomplete(title) {
+  document.getElementById('input-title').value = title;
+  document.getElementById('autocomplete-list').classList.remove('show');
+  document.getElementById('input-genre').value = '';
+  doSearch();
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.field-group')) {
+    document.getElementById('autocomplete-list').classList.remove('show');
+  }
+});
+
+// ===== GENRE CHANGE =====
+function onGenreChange() {
+  const genre = document.getElementById('input-genre').value;
+  document.getElementById('input-title').value = '';
+  document.getElementById('autocomplete-list').classList.remove('show');
+  if (!genre) { hideAll(); return; }
+  const books = DB.filter(b => b.genre === genre);
+  hideAll();
+  if (books.length === 0) { document.getElementById('no-result').style.display = 'block'; return; }
+  renderGenreResults(genre, books);
+}
+
+function renderGenreResults(genre, books) {
+  document.getElementById('genre-header').textContent = `Žanr: ${genre} — ${books.length} knjiga`;
+  const grid = document.getElementById('books-grid');
+  grid.innerHTML = books.map(b => `
+    <div class="book-grid-card" onclick="showBookDetail(${b.id})">
+      <div class="book-grid-cover">
+        ${b.cover ? `<img src="${b.cover}" alt="${b.title}">` : `<div class="book-grid-cover-placeholder">📚</div>`}
+      </div>
+      <div class="book-grid-info">
+        <div class="book-grid-title">${b.title}</div>
+        <div class="book-grid-author">${b.author}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('genre-results').style.display = 'block';
+}
+
+// ===== SEARCH =====
+function doSearch() {
+  document.getElementById('autocomplete-list').classList.remove('show');
+  const title = document.getElementById('input-title').value.trim().toLowerCase();
+  const genre = document.getElementById('input-genre').value;
+  hideAll();
+  if (!title && !genre) { showToast('Unesite naslov ili izaberite žanr.', true); return; }
+  if (genre && !title) { onGenreChange(); return; }
+  let results = DB.filter(b => b.title.toLowerCase().includes(title));
+  if (genre) results = results.filter(b => b.genre === genre);
+  if (results.length === 0) { document.getElementById('no-result').style.display = 'block'; return; }
+  if (results.length === 1) { showBookDetail(results[0].id); return; }
+  renderGenreResults(title, results);
+  document.getElementById('genre-header').textContent = `Rezultati pretrage: "${title}" — ${results.length} knjiga`;
+}
+
+function showBookDetail(id) {
+  const book = DB.find(b => b.id === id);
+  if (!book) return;
+  currentBook = book;
+  hideAll();
+
+  document.getElementById('result-genre-tag').textContent = book.genre || 'Nepoznato';
+  document.getElementById('result-book-title').textContent = book.title;
+
+  const coverWrap = document.getElementById('result-cover');
+  const placeholder = document.getElementById('result-cover-placeholder');
+  if (book.cover) {
+    if (!coverWrap.querySelector('img')) {
+      const img = document.createElement('img');
+      img.id = 'result-cover-img';
+      coverWrap.insertBefore(img, placeholder);
+    }
+    document.getElementById('result-cover-img').src = book.cover;
+    placeholder.style.display = 'none';
+  } else {
+    const img = document.getElementById('result-cover-img');
+    if (img) img.remove();
+    placeholder.style.display = 'block';
+  }
+
+  const meta = document.getElementById('result-meta');
+  meta.innerHTML = `
+    <div class="meta-row"><span class="meta-label">Pisac</span><span class="meta-value">${book.author || '—'}</span></div>
+    <div class="meta-row"><span class="meta-label">Izdavač</span><span class="meta-value">${book.publisher || '—'}</span></div>
+    <div class="meta-row"><span class="meta-label">Žanr</span><span class="meta-value">${book.genre || '—'}</span></div>
+    <div class="meta-row"><span class="meta-label">Broj strana</span><span class="meta-value">${book.pages || '—'}</span></div>
+    <div class="meta-row full"><span class="meta-label">Lokacija na polici</span><span class="meta-value" style="color:var(--accent);font-size:18px;font-family:var(--mono)">${book.location || '—'}</span></div>`;
+
+  if (book.description) {
+    document.getElementById('result-description').textContent = book.description;
+    document.getElementById('result-desc-section').style.display = 'block';
+  } else {
+    document.getElementById('result-desc-section').style.display = 'none';
+  }
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goBack() {
+  document.getElementById('results').style.display = 'none';
+  const genre = document.getElementById('input-genre').value;
+  if (genre) { onGenreChange(); }
+}
+
+function openCoverLightbox() {
+  if (currentBook && currentBook.cover) openLightbox(currentBook.cover);
+}
+
+// ===== POPULATE DROPDOWN =====
+function populateGenreDropdown() {
+  const sel = document.getElementById('input-genre');
+  const genres = [...new Set(DB.map(b => b.genre).filter(Boolean))].sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Svi žanrovi —</option>';
+  genres.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    if (g === current) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ===== ADMIN =====
+async function saveBook() {
+  const title = document.getElementById('a-title').value.trim();
+  const author = document.getElementById('a-author').value.trim();
+  if (!title || !author) { showToast('Naslov i pisac su obavezni!', true); return; }
+  DB.push({
+    id: Date.now(),
+    title, author,
+    publisher: document.getElementById('a-publisher').value.trim(),
+    genre: document.getElementById('a-genre').value.trim(),
+    pages: document.getElementById('a-pages').value.trim(),
+    location: document.getElementById('a-location').value.trim(),
+    cover: document.getElementById('a-cover').value.trim(),
+    description: document.getElementById('a-description').value.trim()
+  });
+  await saveDB();
+  populateGenreDropdown();
+  renderBookList();
+  resetAdminForm();
+  showToast(`"${title}" uspešno sačuvana!`);
+}
+
+async function deleteBook(id) {
+  if (!confirm('Obrisati ovu knjigu?')) return;
+  DB = DB.filter(b => b.id !== id);
+  await saveDB();
+  populateGenreDropdown();
+  renderBookList();
+  showToast('Knjiga obrisana.');
+}
+
+function renderBookList() {
+  const list = document.getElementById('book-list');
+  document.getElementById('list-count').textContent = DB.length;
+  if (DB.length === 0) { list.innerHTML = '<div class="empty-list">Nema knjiga u biblioteci</div>'; return; }
+  list.innerHTML = DB.map(b => `
+    <div class="book-item">
+      <div>
+        <div class="bi-main">${b.title}</div>
+        <div class="bi-sub">${b.author}${b.genre ? ' · ' + b.genre : ''}${b.location ? ' · ' + b.location : ''}</div>
+      </div>
+      <button class="btn-delete" onclick="deleteBook(${b.id})">✕</button>
+    </div>`).join('');
+}
+
+function resetAdminForm() {
+  ['a-title','a-author','a-publisher','a-genre','a-pages','a-location','a-cover','a-description'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ===== UTILS =====
+function showLoading(v) { document.getElementById('loading').classList.toggle('show', v); }
+function openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isError ? 'var(--danger)' : 'var(--success)';
+  t.style.color = isError ? 'var(--danger)' : 'var(--success)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadDB();
+</script>
+</body>
+</html>
