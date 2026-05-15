@@ -384,10 +384,11 @@ async function loadDB() {
 }
 
 async function apiCall(payload) {
-  const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload)
+  const params = new URLSearchParams();
+  Object.keys(payload).forEach(k => {
+    params.append(k, typeof payload[k] === 'object' ? JSON.stringify(payload[k]) : payload[k]);
   });
+  const res = await fetch(SCRIPT_URL + '?' + params.toString());
   return res.json();
 }
 
@@ -774,21 +775,14 @@ async function deleteBook(id) {
 }
 
 async function initSheet() {
-  if (!confirm('Ovo će inicijalizovati Google Sheets tabelu sa svim trenutnim knjigama iz JSONBin-a. Nastaviti?')) return;
+  if (!confirm('Ovo će inicijalizovati Google Sheets tabelu. Nastaviti?')) return;
   showLoading(true);
   try {
-    // Load from JSONBin first
-    const res = await fetch('https://api.jsonbin.io/v3/b/69f31889aaba882197555e66/latest', {
-      headers: { 'X-Master-Key': '$2a$10$vGksn.m1pXrr6ODqKiVeXuL5j0R3HwonCvVNR8tE0NEy8RHlCxjn.' }
-    });
+    const res = await fetch(SCRIPT_URL + '?action=init&books=' + encodeURIComponent(JSON.stringify([])));
     const json = await res.json();
-    const books = json.record.books || [];
-    await apiCall({ action: 'init', books });
-    DB = books;
-    populateGenreDropdown();
-    populateAllGenreDropdown();
-    renderBookList();
-    showToast(`Uspešno! ${books.length} knjiga prebačeno u Google Sheets!`);
+    if (json.success) {
+      showToast('Google Sheets tabela inicijalizovana!');
+    }
   } catch(e) {
     showToast('Greška pri inicijalizaciji.', true);
   }
