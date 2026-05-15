@@ -735,6 +735,17 @@ async function saveBook() {
   const title = document.getElementById('a-title').value.trim();
   const author = document.getElementById('a-author').value.trim();
   if (!title || !author) { showToast('Naslov i pisac su obavezni!', true); return; }
+
+  // Uvek ucitaj najsvezije podatke pre dodavanja
+  try {
+    const res = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const json = await res.json();
+    DB = json.record.books || [];
+  } catch(e) {
+    showToast('Greška pri sinhronizaciji — pokušajte ponovo.', true);
+    return;
+  }
+
   DB.push({
     id: Date.now(),
     title, author,
