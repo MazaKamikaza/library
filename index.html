@@ -322,9 +322,10 @@
       <div class="admin-form">
         <h3>Nova knjiga</h3>
         <div class="form-row">
-          <div class="field-group"><label>Naslov *</label><input type="text" id="a-title" placeholder="Naziv knjige" /></div>
-          <div class="field-group"><label>Pisac *</label><input type="text" id="a-author" placeholder="Ime i prezime" /></div>
+          <div class="field-group"><label>Naslov *</label><input type="text" id="a-title" placeholder="Naziv knjige" oninput="checkDuplicate()" /></div>
+          <div class="field-group"><label>Pisac *</label><input type="text" id="a-author" placeholder="Ime i prezime" oninput="checkDuplicate()" /></div>
         </div>
+        <div id="duplicate-warning" style="display:none;padding:10px 14px;border-radius:6px;font-family:var(--mono);font-size:12px;margin-bottom:4px;"></div>
         <div class="form-row">
           <div class="field-group"><label>Izdavač</label><input type="text" id="a-publisher" placeholder="Naziv izdavača" /></div>
           <div class="field-group"><label>Žanr</label><input type="text" id="a-genre" placeholder="Roman, Istorija..." /></div>
@@ -776,8 +777,34 @@ function renderBookList() {
     </div>`).join('');
 }
 
+
+function checkDuplicate() {
+  const title = document.getElementById("a-title").value.trim().toLowerCase();
+  const author = document.getElementById("a-author").value.trim().toLowerCase();
+  const warn = document.getElementById("duplicate-warning");
+  if (!title) { warn.style.display = "none"; return; }
+  const exactMatch = DB.find(b => b.title.toLowerCase() === title && b.author.toLowerCase() === author);
+  const titleMatch = DB.find(b => b.title.toLowerCase() === title && b.author.toLowerCase() !== author);
+  if (exactMatch) {
+    warn.style.display = "block";
+    warn.style.background = "rgba(248,113,113,0.15)";
+    warn.style.border = "1px solid var(--danger)";
+    warn.style.color = "var(--danger)";
+    warn.textContent = "⚠ Ova knjiga već postoji u biblioteci!";
+  } else if (titleMatch) {
+    warn.style.display = "block";
+    warn.style.background = "rgba(200,232,32,0.1)";
+    warn.style.border = "1px solid var(--accent)";
+    warn.style.color = "var(--accent)";
+    warn.textContent = 'ℹ Postoji knjiga sa istim naslovom ali drugog autora: "' + titleMatch.author + '" — proverite!';
+  } else {
+    warn.style.display = "none";
+  }
+}
+
 function resetAdminForm() {
   ['a-title','a-author','a-publisher','a-genre','a-pages','a-location','a-cover','a-description'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('duplicate-warning').style.display = 'none';
 }
 
 // ===== UTILS =====
