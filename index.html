@@ -314,7 +314,10 @@
           <h2>Admin panel</h2>
           <p>Dodajte i upravljajte knjigama u biblioteci</p>
         </div>
-        <button class="btn-logout" onclick="doLogout()">Odjavi se</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-logout" onclick="initSheet()" style="border-color:var(--accent2);color:var(--accent2);" title="Prebaci postojeće knjige u Google Sheets">↑ Prebaci u Sheets</button>
+          <button class="btn-logout" onclick="doLogout()">Odjavi se</button>
+        </div>
       </div>
     </div>
 
@@ -357,24 +360,22 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BIN_ID  = '69f31889aaba882197555e66';
-const API_KEY = '$2a$10$vGksn.m1pXrr6ODqKiVeXuL5j0R3HwonCvVNR8tE0NEy8RHlCxjn.';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRQyBaoFl92BHPfepFzjuVxLBAaokWO2l00nKcCp3epIrMxdsxaSrPFbZwcUbc2zmM6Q/exec';
 const ADMIN_PW = 'mojeknjige';
-const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let DB = [];
 let isAdmin = false;
 let currentBook = null;
 let autocompleteIndex = -1;
-let lastSearchContext = null; // 'genre', 'author', 'title', 'all'
+let lastSearchContext = null;
 
 // ===== DB =====
 async function loadDB() {
   showLoading(true);
   try {
-    const res = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const res = await fetch(SCRIPT_URL);
     const json = await res.json();
-    DB = json.record.books || [];
+    DB = json.books || [];
     populateGenreDropdown();
     populateAllGenreDropdown();
     if (isAdmin) renderBookList();
@@ -382,16 +383,12 @@ async function loadDB() {
   showLoading(false);
 }
 
-async function saveDB() {
-  showLoading(true);
-  try {
-    await fetch(BASE_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify({ books: DB })
-    });
-  } catch(e) { showToast('Greška pri čuvanju!', true); }
-  showLoading(false);
+async function apiCall(payload) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res.json();
 }
 
 // ===== AUTH =====
@@ -735,18 +732,8 @@ async function saveBook() {
   const title = document.getElementById('a-title').value.trim();
   const author = document.getElementById('a-author').value.trim();
   if (!title || !author) { showToast('Naslov i pisac su obavezni!', true); return; }
-
-  // Uvek ucitaj najsvezije podatke pre dodavanja
-  try {
-    const res = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
-    const json = await res.json();
-    DB = json.record.books || [];
-  } catch(e) {
-    showToast('Greška pri sinhronizaciji — pokušajte ponovo.', true);
-    return;
-  }
-
-  DB.push({
+  showLoading(true);
+  const book = {
     id: Date.now(),
     title, author,
     publisher: document.getElementById('a-publisher').value.trim(),
@@ -755,45 +742,57 @@ async function saveBook() {
     location: document.getElementById('a-location').value.trim(),
     cover: document.getElementById('a-cover').value.trim(),
     description: document.getElementById('a-description').value.trim()
-  });
-  await saveDB();
-  // Verifikacija — ponovo ucitaj da potvrdi da je zaista sacuvano
+  };
   try {
-    const verify = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
-    const vjson = await verify.json();
-    const savedBooks = vjson.record.books || [];
-    const found = savedBooks.find(b => b.title.toLowerCase() === title.toLowerCase() && b.author.toLowerCase() === author.toLowerCase());
-    if (!found) {
-      // Nije sacuvano — pokusaj ponovo
-      DB = savedBooks;
-      DB.push({ id: Date.now(), title, author,
-        publisher: document.getElementById('a-publisher').value.trim(),
-        genre: document.getElementById('a-genre').value.trim(),
-        pages: document.getElementById('a-pages').value.trim(),
-        location: document.getElementById('a-location').value.trim(),
-        cover: document.getElementById('a-cover').value.trim(),
-        description: document.getElementById('a-description').value.trim()
-      });
-      await saveDB();
-    } else {
-      DB = savedBooks;
-    }
-  } catch(e) {}
-  populateGenreDropdown();
-  populateAllGenreDropdown();
-  renderBookList();
-  resetAdminForm();
-  showToast(`"${title}" uspešno sačuvana! (${DB.length} knjiga)`);
+    await apiCall({ action: 'add', book });
+    DB.push(book);
+    populateGenreDropdown();
+    populateAllGenreDropdown();
+    renderBookList();
+    resetAdminForm();
+    showToast(`"${title}" uspešno sačuvana! (${DB.length} knjiga)`);
+  } catch(e) {
+    showToast('Greška pri čuvanju — pokušajte ponovo.', true);
+  }
+  showLoading(false);
 }
 
 async function deleteBook(id) {
   if (!confirm('Obrisati ovu knjigu?')) return;
-  DB = DB.filter(b => b.id !== id);
-  await saveDB();
-  populateGenreDropdown();
-  populateAllGenreDropdown();
-  renderBookList();
-  showToast('Knjiga obrisana.');
+  showLoading(true);
+  try {
+    await apiCall({ action: 'delete', id });
+    DB = DB.filter(b => b.id !== id);
+    populateGenreDropdown();
+    populateAllGenreDropdown();
+    renderBookList();
+    showToast('Knjiga obrisana.');
+  } catch(e) {
+    showToast('Greška pri brisanju.', true);
+  }
+  showLoading(false);
+}
+
+async function initSheet() {
+  if (!confirm('Ovo će inicijalizovati Google Sheets tabelu sa svim trenutnim knjigama iz JSONBin-a. Nastaviti?')) return;
+  showLoading(true);
+  try {
+    // Load from JSONBin first
+    const res = await fetch('https://api.jsonbin.io/v3/b/69f31889aaba882197555e66/latest', {
+      headers: { 'X-Master-Key': '$2a$10$vGksn.m1pXrr6ODqKiVeXuL5j0R3HwonCvVNR8tE0NEy8RHlCxjn.' }
+    });
+    const json = await res.json();
+    const books = json.record.books || [];
+    await apiCall({ action: 'init', books });
+    DB = books;
+    populateGenreDropdown();
+    populateAllGenreDropdown();
+    renderBookList();
+    showToast(`Uspešno! ${books.length} knjiga prebačeno u Google Sheets!`);
+  } catch(e) {
+    showToast('Greška pri inicijalizaciji.', true);
+  }
+  showLoading(false);
 }
 
 function renderBookList() {
