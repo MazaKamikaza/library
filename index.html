@@ -757,11 +757,33 @@ async function saveBook() {
     description: document.getElementById('a-description').value.trim()
   });
   await saveDB();
+  // Verifikacija — ponovo ucitaj da potvrdi da je zaista sacuvano
+  try {
+    const verify = await fetch(BASE_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const vjson = await verify.json();
+    const savedBooks = vjson.record.books || [];
+    const found = savedBooks.find(b => b.title.toLowerCase() === title.toLowerCase() && b.author.toLowerCase() === author.toLowerCase());
+    if (!found) {
+      // Nije sacuvano — pokusaj ponovo
+      DB = savedBooks;
+      DB.push({ id: Date.now(), title, author,
+        publisher: document.getElementById('a-publisher').value.trim(),
+        genre: document.getElementById('a-genre').value.trim(),
+        pages: document.getElementById('a-pages').value.trim(),
+        location: document.getElementById('a-location').value.trim(),
+        cover: document.getElementById('a-cover').value.trim(),
+        description: document.getElementById('a-description').value.trim()
+      });
+      await saveDB();
+    } else {
+      DB = savedBooks;
+    }
+  } catch(e) {}
   populateGenreDropdown();
   populateAllGenreDropdown();
   renderBookList();
   resetAdminForm();
-  showToast(`"${title}" uspešno sačuvana!`);
+  showToast(`"${title}" uspešno sačuvana! (${DB.length} knjiga)`);
 }
 
 async function deleteBook(id) {
