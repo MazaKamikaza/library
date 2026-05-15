@@ -61,7 +61,7 @@
   .search-hero h1 { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; margin-bottom: 8px; }
   .search-hero p { color: var(--text-muted); font-size: 14px; }
 
-  .search-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; margin-bottom: 40px; }
+  .search-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px; align-items: end; margin-bottom: 40px; }
   .field-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
   label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; }
   input, select, textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 14px; padding: 12px 16px; border-radius: 6px; outline: none; transition: border-color 0.2s; width: 100%; }
@@ -81,9 +81,13 @@
   .btn-search { background: var(--accent); color: #1a2008; border: none; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.1em; padding: 12px 28px; border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; white-space: nowrap; }
   .btn-search:hover { background: #d8f830; transform: translateY(-1px); }
 
-  /* GENRE RESULTS */
+  /* GENRE / ALL RESULTS */
   .genre-results { display: none; margin-bottom: 40px; }
-  .genre-header { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.06em; }
+  .genre-header { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.06em; display: flex; align-items: center; justify-content: space-between; }
+  .sort-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: var(--mono); font-size: 11px; padding: 5px 12px; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.2s; }
+  .sort-btn:hover, .sort-btn.active { border-color: var(--accent); color: var(--accent); }
+  .sort-controls { display: flex; gap: 6px; }
+
   .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .book-grid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
   .book-grid-card:hover { border-color: var(--accent); transform: translateY(-2px); }
@@ -93,6 +97,22 @@
   .book-grid-info { padding: 12px; }
   .book-grid-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 4px; line-height: 1.3; }
   .book-grid-author { font-size: 12px; color: var(--text-muted); }
+
+  /* ALL BOOKS PAGE */
+  .all-books-hero { margin-bottom: 32px; }
+  .all-books-hero h2 { font-family: var(--mono); font-size: 22px; color: var(--accent); margin-bottom: 6px; }
+  .all-books-hero p { color: var(--text-muted); font-size: 14px; }
+
+  .all-books-controls { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 28px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .all-books-controls .field-group { flex: 1; min-width: 200px; }
+  .alphabet-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 24px; }
+  .alpha-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: var(--mono); font-size: 12px; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+  .alpha-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .alpha-btn.active { background: var(--accent); color: #1a2008; border-color: var(--accent); font-weight: 600; }
+  .alpha-btn.disabled { opacity: 0.25; cursor: default; }
+
+  .alpha-section { margin-bottom: 32px; }
+  .alpha-section-header { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--accent); padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px; letter-spacing: 0.06em; }
 
   /* BOOK DETAIL */
   #results { display: none; }
@@ -164,6 +184,7 @@
     .admin-layout { grid-template-columns: 1fr; }
     .book-detail-layout { grid-template-columns: 1fr; }
     .book-meta { grid-template-columns: 1fr; }
+    .all-books-controls { flex-direction: column; }
   }
 </style>
 </head>
@@ -190,6 +211,7 @@
   <div class="logo">Moja <span>//</span> Biblioteka</div>
   <nav class="nav-tabs">
     <button class="nav-tab active" id="tab-search" onclick="showPage('search', this)">Pretraga</button>
+    <button class="nav-tab" id="tab-all" onclick="showPage('all', this)">Sve knjige</button>
     <button class="nav-tab" id="tab-admin" onclick="handleAdminTab()">Admin</button>
   </nav>
 </header>
@@ -199,7 +221,7 @@
   <div id="page-search" class="page active">
     <div class="search-hero">
       <h1>BIBLIOTEKA</h1>
-      <p>Pretražite po naslovu ili izaberite žanr</p>
+      <p>Pretražite po naslovu, autoru ili izaberite žanr</p>
     </div>
 
     <div class="search-form">
@@ -207,6 +229,11 @@
         <label>Naslov knjige</label>
         <input type="text" id="input-title" placeholder="Počnite da kucate..." autocomplete="off" oninput="onTitleInput()" onkeydown="onTitleKeydown(event)" />
         <div class="autocomplete-list" id="autocomplete-list"></div>
+      </div>
+      <div class="field-group">
+        <label>Autor / Pisac</label>
+        <input type="text" id="input-author" placeholder="Ime autora..." autocomplete="off" oninput="onAuthorInput()" onkeydown="if(event.key==='Enter') doSearch()" />
+        <div class="autocomplete-list" id="autocomplete-author-list"></div>
       </div>
       <div class="field-group">
         <label>Žanr</label>
@@ -222,20 +249,19 @@
       Nema rezultata za traženu pretragu.
     </div>
 
-    <!-- GENRE RESULTS -->
     <div id="genre-results" class="genre-results">
-      <div class="genre-header" id="genre-header"></div>
+      <div class="genre-header">
+        <div id="genre-header"></div>
+      </div>
       <div class="books-grid" id="books-grid"></div>
     </div>
 
-    <!-- SINGLE BOOK DETAIL -->
     <div id="results">
       <button class="btn-back" onclick="goBack()">← Nazad</button>
       <div class="result-header">
         <span class="result-tag" id="result-genre-tag"></span>
         <span class="result-title" id="result-book-title"></span>
       </div>
-
       <div class="book-detail-layout">
         <div>
           <div class="book-cover-wrap" id="result-cover" onclick="openCoverLightbox()">
@@ -254,6 +280,30 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ALL BOOKS PAGE -->
+  <div id="page-all" class="page">
+    <div class="all-books-hero">
+      <h2>Sve knjige</h2>
+      <p id="all-books-count"></p>
+    </div>
+
+    <div class="all-books-controls">
+      <div class="field-group">
+        <label>Filtriraj po autoru</label>
+        <input type="text" id="all-author-filter" placeholder="Unesite ime autora..." oninput="renderAllBooks()" />
+      </div>
+      <div class="field-group">
+        <label>Žanr</label>
+        <select id="all-genre-filter" onchange="renderAllBooks()">
+          <option value="">— Svi žanrovi —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="alphabet-bar" id="alphabet-bar"></div>
+    <div id="all-books-content"></div>
   </div>
 
   <!-- ADMIN PAGE -->
@@ -315,6 +365,7 @@ let DB = [];
 let isAdmin = false;
 let currentBook = null;
 let autocompleteIndex = -1;
+let lastSearchContext = null; // 'genre', 'author', 'title', 'all'
 
 // ===== DB =====
 async function loadDB() {
@@ -324,6 +375,7 @@ async function loadDB() {
     const json = await res.json();
     DB = json.record.books || [];
     populateGenreDropdown();
+    populateAllGenreDropdown();
     if (isAdmin) renderBookList();
   } catch(e) { showToast('Greška pri učitavanju!', true); }
   showLoading(false);
@@ -372,6 +424,7 @@ function showPage(page, tab) {
   document.getElementById('page-' + page).classList.add('active');
   if (tab) tab.classList.add('active');
   if (page === 'search') { hideAll(); populateGenreDropdown(); }
+  if (page === 'all') { renderAllBooks(); }
 }
 
 function hideAll() {
@@ -380,7 +433,7 @@ function hideAll() {
   document.getElementById('no-result').style.display = 'none';
 }
 
-// ===== AUTOCOMPLETE =====
+// ===== AUTOCOMPLETE — NASLOV =====
 function onTitleInput() {
   const val = document.getElementById('input-title').value.trim().toLowerCase();
   const list = document.getElementById('autocomplete-list');
@@ -419,12 +472,38 @@ function selectAutocomplete(title) {
   document.getElementById('input-title').value = title;
   document.getElementById('autocomplete-list').classList.remove('show');
   document.getElementById('input-genre').value = '';
+  document.getElementById('input-author').value = '';
+  doSearch();
+}
+
+// ===== AUTOCOMPLETE — AUTOR =====
+function onAuthorInput() {
+  const val = document.getElementById('input-author').value.trim().toLowerCase();
+  const list = document.getElementById('autocomplete-author-list');
+  if (val.length < 1) { list.classList.remove('show'); return; }
+  const authors = [...new Set(DB.map(b => b.author).filter(Boolean))];
+  const matches = authors.filter(a => a.toLowerCase().includes(val)).slice(0, 8);
+  if (matches.length === 0) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.map(a => {
+    const highlighted = a.replace(new RegExp(`(${val})`, 'gi'), '<em>$1</em>');
+    const count = DB.filter(b => b.author === a).length;
+    return `<div class="autocomplete-item" onmousedown="selectAuthor('${a.replace(/'/g, "\\'")}')">${highlighted} <span style="color:var(--text-muted);font-size:11px">${count} knj.</span></div>`;
+  }).join('');
+  list.classList.add('show');
+}
+
+function selectAuthor(author) {
+  document.getElementById('input-author').value = author;
+  document.getElementById('autocomplete-author-list').classList.remove('show');
+  document.getElementById('input-title').value = '';
+  document.getElementById('input-genre').value = '';
   doSearch();
 }
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.field-group')) {
     document.getElementById('autocomplete-list').classList.remove('show');
+    document.getElementById('autocomplete-author-list').classList.remove('show');
   }
 });
 
@@ -432,19 +511,21 @@ document.addEventListener('click', (e) => {
 function onGenreChange() {
   const genre = document.getElementById('input-genre').value;
   document.getElementById('input-title').value = '';
+  document.getElementById('input-author').value = '';
   document.getElementById('autocomplete-list').classList.remove('show');
   if (!genre) { hideAll(); return; }
   const books = DB.filter(b => b.genre && b.genre.split(',').map(g => g.trim()).includes(genre));
   hideAll();
   if (books.length === 0) { document.getElementById('no-result').style.display = 'block'; return; }
-  renderGenreResults(genre, books);
+  lastSearchContext = { type: 'genre', value: genre };
+  renderGenreResults(`Žanr: ${genre} — ${books.length} knjiga`, books);
 }
 
-function renderGenreResults(genre, books) {
-  document.getElementById('genre-header').textContent = `Žanr: ${genre} — ${books.length} knjiga`;
+function renderGenreResults(headerText, books) {
+  document.getElementById('genre-header').textContent = headerText;
   const grid = document.getElementById('books-grid');
   grid.innerHTML = books.map(b => `
-    <div class="book-grid-card" onclick="showBookDetail(${b.id})">
+    <div class="book-grid-card" onclick="showBookDetail(${b.id}, 'grid')">
       <div class="book-grid-cover">
         ${b.cover ? `<img src="${b.cover}" alt="${b.title}">` : `<div class="book-grid-cover-placeholder">📚</div>`}
       </div>
@@ -459,20 +540,34 @@ function renderGenreResults(genre, books) {
 // ===== SEARCH =====
 function doSearch() {
   document.getElementById('autocomplete-list').classList.remove('show');
+  document.getElementById('autocomplete-author-list').classList.remove('show');
   const title = document.getElementById('input-title').value.trim().toLowerCase();
+  const author = document.getElementById('input-author').value.trim().toLowerCase();
   const genre = document.getElementById('input-genre').value;
   hideAll();
-  if (!title && !genre) { showToast('Unesite naslov ili izaberite žanr.', true); return; }
-  if (genre && !title) { onGenreChange(); return; }
-  let results = DB.filter(b => b.title.toLowerCase().includes(title));
+  if (!title && !author && !genre) { showToast('Unesite naslov, autora ili izaberite žanr.', true); return; }
+  if (genre && !title && !author) { onGenreChange(); return; }
+
+  let results = DB;
+  if (title) results = results.filter(b => b.title.toLowerCase().includes(title));
+  if (author) results = results.filter(b => b.author && b.author.toLowerCase().includes(author));
   if (genre) results = results.filter(b => b.genre === genre);
+
   if (results.length === 0) { document.getElementById('no-result').style.display = 'block'; return; }
-  if (results.length === 1) { showBookDetail(results[0].id); return; }
-  renderGenreResults(title, results);
-  document.getElementById('genre-header').textContent = `Rezultati pretrage: "${title}" — ${results.length} knjiga`;
+  if (results.length === 1) { showBookDetail(results[0].id, 'single'); return; }
+
+  let header = '';
+  if (author && !title) {
+    lastSearchContext = { type: 'author', value: author };
+    header = `Autor: "${document.getElementById('input-author').value.trim()}" — ${results.length} knjiga`;
+  } else {
+    lastSearchContext = { type: 'title', value: title };
+    header = `Rezultati pretrage: "${document.getElementById('input-title').value.trim()}" — ${results.length} knjiga`;
+  }
+  renderGenreResults(header, results);
 }
 
-function showBookDetail(id) {
+function showBookDetail(id, fromContext) {
   const book = DB.find(b => b.id === id);
   if (!book) return;
   currentBook = book;
@@ -519,14 +614,95 @@ function showBookDetail(id) {
 function goBack() {
   document.getElementById('results').style.display = 'none';
   const genre = document.getElementById('input-genre').value;
-  if (genre) { onGenreChange(); }
+  if (genre) { onGenreChange(); return; }
+  if (lastSearchContext) { doSearch(); }
 }
 
 function openCoverLightbox() {
   if (currentBook && currentBook.cover) openLightbox(currentBook.cover);
 }
 
-// ===== POPULATE DROPDOWN =====
+// ===== ALL BOOKS PAGE =====
+function renderAllBooks() {
+  const authorFilter = (document.getElementById('all-author-filter').value || '').trim().toLowerCase();
+  const genreFilter = document.getElementById('all-genre-filter').value || '';
+
+  let books = [...DB];
+  if (authorFilter) books = books.filter(b => b.author && b.author.toLowerCase().includes(authorFilter));
+  if (genreFilter) books = books.filter(b => b.genre && b.genre.split(',').map(g => g.trim()).includes(genreFilter));
+
+  // Sort alphabetically by title
+  books.sort((a, b) => a.title.localeCompare(b.title, 'sr'));
+
+  document.getElementById('all-books-count').textContent = `Ukupno knjiga: ${books.length}`;
+
+  // Group by first letter
+  const groups = {};
+  books.forEach(b => {
+    const letter = b.title.charAt(0).toUpperCase();
+    if (!groups[letter]) groups[letter] = [];
+    groups[letter].push(b);
+  });
+
+  const letters = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'sr'));
+  const allLetters = 'ABCČĆDĐEFGHIJKLMNJOPRSŠTUVZŽ'.split('');
+
+  // Alphabet bar
+  const bar = document.getElementById('alphabet-bar');
+  bar.innerHTML = allLetters.map(l => {
+    const hasBooks = groups[l];
+    return `<button class="alpha-btn ${hasBooks ? '' : 'disabled'}" onclick="${hasBooks ? `scrollToLetter('${l}')` : ''}">${l}</button>`;
+  }).join('');
+
+  // Content
+  const content = document.getElementById('all-books-content');
+  if (books.length === 0) {
+    content.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-muted);font-family:var(--mono);font-size:14px;">◎ Nema knjiga za zadati filter.</div>`;
+    return;
+  }
+
+  content.innerHTML = letters.map(letter => `
+    <div class="alpha-section" id="section-${letter}">
+      <div class="alpha-section-header">${letter}</div>
+      <div class="books-grid">
+        ${groups[letter].map(b => `
+          <div class="book-grid-card" onclick="showBookFromAll(${b.id})">
+            <div class="book-grid-cover">
+              ${b.cover ? `<img src="${b.cover}" alt="${b.title}">` : `<div class="book-grid-cover-placeholder">📚</div>`}
+            </div>
+            <div class="book-grid-info">
+              <div class="book-grid-title">${b.title}</div>
+              <div class="book-grid-author">${b.author}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function scrollToLetter(letter) {
+  const el = document.getElementById('section-' + letter);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showBookFromAll(id) {
+  // Switch to search page and show detail
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-search').classList.add('active');
+  document.getElementById('tab-search').classList.add('active');
+  hideAll();
+  showBookDetail(id, 'all');
+
+  // Override back button to go back to all books
+  const backBtn = document.querySelector('#results .btn-back');
+  backBtn.onclick = () => {
+    document.getElementById('results').style.display = 'none';
+    showPage('all', document.getElementById('tab-all'));
+  };
+  backBtn.textContent = '← Sve knjige';
+}
+
+// ===== POPULATE DROPDOWNS =====
 function populateGenreDropdown() {
   const sel = document.getElementById('input-genre');
   const allGenres = DB.flatMap(b => b.genre ? b.genre.split(',').map(g => g.trim()).filter(Boolean) : []);
@@ -537,6 +713,18 @@ function populateGenreDropdown() {
     const o = document.createElement('option');
     o.value = g; o.textContent = g;
     if (g === current) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function populateAllGenreDropdown() {
+  const sel = document.getElementById('all-genre-filter');
+  const allGenres = DB.flatMap(b => b.genre ? b.genre.split(',').map(g => g.trim()).filter(Boolean) : []);
+  const genres = [...new Set(allGenres)].sort();
+  sel.innerHTML = '<option value="">— Svi žanrovi —</option>';
+  genres.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
     sel.appendChild(o);
   });
 }
@@ -558,6 +746,7 @@ async function saveBook() {
   });
   await saveDB();
   populateGenreDropdown();
+  populateAllGenreDropdown();
   renderBookList();
   resetAdminForm();
   showToast(`"${title}" uspešno sačuvana!`);
@@ -568,6 +757,7 @@ async function deleteBook(id) {
   DB = DB.filter(b => b.id !== id);
   await saveDB();
   populateGenreDropdown();
+  populateAllGenreDropdown();
   renderBookList();
   showToast('Knjiga obrisana.');
 }
