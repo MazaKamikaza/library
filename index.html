@@ -499,6 +499,12 @@ function selectAuthor(author) {
 }
 
 document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('author-link')) {
+    e.preventDefault();
+    const author = e.target.getAttribute('data-author');
+    if (author) searchByAuthor(author);
+    return;
+  }
   if (!e.target.closest('.field-group')) {
     document.getElementById('autocomplete-list').classList.remove('show');
     document.getElementById('autocomplete-author-list').classList.remove('show');
@@ -609,7 +615,7 @@ function showBookDetail(id, fromContext) {
 
   const meta = document.getElementById('result-meta');
   meta.innerHTML = `
-    <div class="meta-row"><span class="meta-label">Pisac</span><span class="meta-value"><a href="#" style="color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent2);" onclick="searchByAuthor('${book.author}');return false;">${book.author || '—'}</a></span></div>
+    <div class="meta-row"><span class="meta-label">Pisac</span><span class="meta-value"><a href="#" class="author-link" data-author="${book.author || ''}" style="color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent2);cursor:pointer;">${book.author || '—'}</a></span></div>
     <div class="meta-row"><span class="meta-label">Izdavač</span><span class="meta-value">${book.publisher || '—'}</span></div>
     <div class="meta-row"><span class="meta-label">Žanr</span><span class="meta-value">${book.genre || '—'}</span></div>
     <div class="meta-row"><span class="meta-label">Broj strana</span><span class="meta-value">${book.pages || '—'}</span></div>
