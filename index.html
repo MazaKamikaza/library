@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -566,6 +565,23 @@ function doSearch() {
   renderGenreResults(header, results);
 }
 
+function searchByAuthor(author) {
+  // Go back to search view
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('input-author').value = author;
+  document.getElementById('input-title').value = '';
+  document.getElementById('input-genre').value = '';
+  hideAll();
+  
+  const results = DB.filter(b => b.author && b.author.toLowerCase() === author.toLowerCase());
+  if (results.length === 0) {
+    document.getElementById('no-result').style.display = 'block';
+    return;
+  }
+  lastSearchContext = { type: 'author', value: author };
+  renderGenreResults(`Autor: "${author}" — ${results.length} knjiga`, results);
+}
+
 function showBookDetail(id, fromContext) {
   const book = DB.find(b => b.id === id);
   if (!book) return;
@@ -593,7 +609,7 @@ function showBookDetail(id, fromContext) {
 
   const meta = document.getElementById('result-meta');
   meta.innerHTML = `
-    <div class="meta-row"><span class="meta-label">Pisac</span><span class="meta-value">${book.author || '—'}</span></div>
+    <div class="meta-row"><span class="meta-label">Pisac</span><span class="meta-value"><a href="#" style="color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent2);" onclick="searchByAuthor('${book.author}');return false;">${book.author || '—'}</a></span></div>
     <div class="meta-row"><span class="meta-label">Izdavač</span><span class="meta-value">${book.publisher || '—'}</span></div>
     <div class="meta-row"><span class="meta-label">Žanr</span><span class="meta-value">${book.genre || '—'}</span></div>
     <div class="meta-row"><span class="meta-label">Broj strana</span><span class="meta-value">${book.pages || '—'}</span></div>
