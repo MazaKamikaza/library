@@ -174,6 +174,27 @@
   .btn-back { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: var(--mono); font-size: 11px; padding: 7px 16px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-bottom: 24px; display: inline-block; }
   .btn-back:hover { border-color: var(--accent); color: var(--accent); }
 
+  #global-back-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.2s;
+    display: none;
+    z-index: 90;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  #global-back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -353,6 +374,7 @@
   </div>
 </main>
 
+<button id="global-back-btn" onclick="globalBack()">← Nazad</button>
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightbox-img" src="" alt="">
 </div>
@@ -421,14 +443,19 @@ function showPage(page, tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   if (tab) tab.classList.add('active');
-  if (page === 'search') { hideAll(); populateGenreDropdown(); }
-  if (page === 'all') { renderAllBooks(); }
+  if (page === 'search') { hideAll(); populateGenreDropdown(); clearHistory(); }
+  if (page === 'all') { renderAllBooks(); clearHistory(); }
 }
 
 function hideAll() {
   document.getElementById('results').style.display = 'none';
   document.getElementById('genre-results').style.display = 'none';
   document.getElementById('no-result').style.display = 'none';
+}
+
+function clearHistory() {
+  navHistory = [];
+  document.getElementById('global-back-btn').style.display = 'none';
 }
 
 // ===== AUTOCOMPLETE — NASLOV =====
@@ -525,7 +552,10 @@ function onGenreChange() {
   renderGenreResults(`Žanr: ${genre} — ${books.length} knjiga`, books);
 }
 
-function renderGenreResults(headerText, books) {
+function renderGenreResults(headerText, books, skipHistory) {
+  if (!skipHistory) {
+    pushHistory({ type: 'grid', header: headerText, books: books, context: lastSearchContext });
+  }
   document.getElementById('genre-header').textContent = headerText;
   const grid = document.getElementById('books-grid');
   grid.innerHTML = books.map(b => `
@@ -571,6 +601,39 @@ function doSearch() {
   renderGenreResults(header, results);
 }
 
+// ===== HISTORY STACK =====
+let navHistory = [];
+
+function pushHistory(state) {
+  navHistory.push(state);
+  document.getElementById('global-back-btn').style.display = 'block';
+}
+
+function globalBack() {
+  if (navHistory.length === 0) return;
+  navHistory.pop();
+  
+  if (navHistory.length === 0) {
+    // Nema vise istorije - idi na pocetak
+    document.getElementById('global-back-btn').style.display = 'none';
+    hideAll();
+    document.getElementById('input-title').value = '';
+    document.getElementById('input-author').value = '';
+    document.getElementById('input-genre').value = '';
+    return;
+  }
+  
+  const prev = navHistory[navHistory.length - 1];
+  if (prev.type === 'grid') {
+    document.getElementById('results').style.display = 'none';
+    renderGenreResults(prev.header, prev.books);
+    lastSearchContext = prev.context;
+  } else if (prev.type === 'detail') {
+    hideAll();
+    showBookDetailNoHistory(prev.id);
+  }
+}
+
 function searchByAuthor(author) {
   // Go back to search view
   document.getElementById('results').style.display = 'none';
@@ -588,12 +651,24 @@ function searchByAuthor(author) {
   renderGenreResults(`Autor: "${author}" — ${results.length} knjiga`, results);
 }
 
-function showBookDetail(id, fromContext) {
+function showBookDetailNoHistory(id) {
   const book = DB.find(b => b.id === id);
   if (!book) return;
   currentBook = book;
   hideAll();
+  _renderBookDetail(book);
+}
 
+function showBookDetail(id, fromContext) {
+  pushHistory({ type: 'detail', id: id });
+  const book = DB.find(b => b.id === id);
+  if (!book) return;
+  currentBook = book;
+  hideAll();
+  _renderBookDetail(book);
+}
+
+function _renderBookDetail(book) {
   document.getElementById('result-genre-tag').textContent = book.genre || 'Nepoznato';
   document.getElementById('result-book-title').textContent = book.title;
 
